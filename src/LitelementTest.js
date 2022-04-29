@@ -1,6 +1,9 @@
 import { html, css, LitElement } from 'lit';
+import { TextTransform } from './mixins/transform-text.js';
+import './search-input.js';
+import './recent-searches.js';
 
-export class LitelementTest extends LitElement {
+export class LitelementTest extends TextTransform(LitElement) {
   static get styles() {
     return css`
       :host {
@@ -19,33 +22,40 @@ export class LitelementTest extends LitElement {
 
   static get properties() {
     return {
-      title: String,
       movie: Object,
+      success: Boolean,
+      ended: Boolean,
+      titles: Array,
     };
   }
 
   constructor() {
     super();
-    this.title = 'Buscar película';
     this.movie = {};
+    this.success = false;
+    this.ended = false
+    this.titles = []
   }
 
-  get input() {
-    return this.renderRoot?.querySelector('#movie') ?? null;
-  }
-
-  async searchMovie() {
+  async searchMovie(e) {
     this.movie = await fetch(
-      `https://www.omdbapi.com/?t=${this.input.value}&apikey=yourapi`
-    ).then(m => m.json());
+      `https://www.omdbapi.com/?t=${e.detail.movieTitle}&apikey=2f054e69`
+    ).then(m => {
+      this.success = true
+      this.ended = true
+      if(!e.detail.recent){
+        this.titles.push(this.transformToUpperCase(e.detail.movieTitle))
+      }
+      this.renderRoot.getElementById('searches').requestUpdate()
+      return m.json()
+    })
   }
 
   render() {
     return html`
-      <h2>${this.title}</h2>
-      <input id="movie" type="text" />
-      <button @click=${this.searchMovie}>Buscar</button>
       <div>
+        <search-input @sendMovieTitle=${this.searchMovie}></search-input>
+        <recent-searches @sendRecentMovie=${this.searchMovie} id="searches" .searches=${this.titles}></recent-searches>
         <div>
           ${this.movie.Poster 
             ? html `<img .src=${this.movie.Poster} alt="contains the poster of the movie"/>`
@@ -53,17 +63,17 @@ export class LitelementTest extends LitElement {
           }
         </div>
         <div>
-          <p> <span class="tag">Sinopsis</span> ${this.movie.Plot ? this.movie.Plot : '-'}</p>
+          <p> <span class="tag">Sinopsis:</span> ${this.movie.Plot ? this.movie.Plot : '-'}</p>
         </div>
         <div>
-          <p><span class="tag">Dirección</span> ${this.movie.Director ? this.movie.Director : '-'}</p>
+          <p><span class="tag">Dirección:</span> ${this.movie.Director ? this.movie.Director : '-'}</p>
         </div>
         <div>
-          <p><span class="tag">Guión</span> ${this.movie.Writer ? this.movie.Writer : '-' }</p>
+          <p><span class="tag">Guión:</span> ${this.movie.Writer ? this.movie.Writer : '-' }</p>
         </div>
         <div>
           <p>
-            <span class="tag">Reparto principal </span> ${this.movie.Actors ? this.movie.Actors : '-'}
+            <span class="tag">Reparto principal: </span> ${this.movie.Actors ? this.movie.Actors : '-'}
           </p>
         </div>
       </div>
